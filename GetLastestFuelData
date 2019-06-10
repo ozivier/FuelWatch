@@ -1,0 +1,71 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed May 15 14:04:40 2019
+
+@author: olive
+
+"""
+
+from selenium import webdriver
+# from selenium.webdriver.common.keys import Keys
+import zipfile
+import os
+import time
+
+   
+def DownloadHistoricalPrices(n):
+    """Downlat the n zip files from FuelWatch webpage.
+    Each zip files has a month of historical prices
+        
+    Simple Version
+    """
+    
+    # Set FireFox profile for Selenium
+    
+    profile = webdriver.FirefoxProfile()
+    profile.set_preference('browser.download.folderList', 2) # custom location
+    profile.set_preference('browser.download.manager.showWhenStarting', False)  
+    profile.set_preference('browser.download.dir', "C:\\Users\\olive\\Downloads\\temp")
+    profile.set_preference('browser.helperApps.neverAsk.saveToDisk', 'application/zip')
+    # url has the name of the webpage wich coutains the historical fuel prices 
+    url  = "https://www.fuelwatch.wa.gov.au/fuelwatch/pages/public/historicalFileDownloadRetail.jspx"
+    # set driver for Selenium
+    driver = webdriver.Firefox(firefox_profile=profile)
+    driver.get(url)
+    # file name is an empty list to store the names of the zip files to be downloaded
+    file_name = []
+    path_name = []
+    # loop to get the n zip files
+    for i in range(n):
+        # ids is the name of the id where the zip file is located on the FuelWatch page
+        ids = "j_id99:historicalPriceFiles:{}:resource".format(i)
+        link = driver.find_element_by_id(ids)
+        # get the path of the zip file such as:
+        # https://www.fuelwatch.wa.gov.au/fuelwatch/block/resource/LTExODU3NTU3MDc=/FuelWatchRetail-05-2019.csv.zip
+        # click on the path to download the zip file
+        link.click()
+        path = link.get_attribute('href')
+        # get the name of the file. path is split after each character forward slash. 
+        # The name of the file is the last item of the list.
+        zipname = path.rsplit('/')[-1]
+        print("Downloaded: ", zipname)
+        file_name.append(zipname)
+        #  path name of the downloaded zip file
+        pathname = os.path.join(os.path.sep, 'Users', 'olive', 'Downloads', 'temp', file_name[i])
+        path_name.append(pathname)
+        
+    # pause to enable time for download before closing
+    time.sleep(2)
+    # Close firefox
+    driver.close()
+   
+    # Loop to extract the csv files from the csv files to the Fuel Watch folder
+    # and to delete the zip files
+    for i in range(n):
+        with zipfile.ZipFile(path_name[i],"r") as zip_ref:
+            zip_ref.extractall("C:\\Users\\olive\\Documents\\Current\\6 - JEFE FINANCE\\FuelWatch\\Fuel Data")
+            print("Extracted: ", zip_ref.namelist())
+        os.remove(path_name[i])
+        
+# Download the latest file        
+DownloadHistoricalPrices(1)
